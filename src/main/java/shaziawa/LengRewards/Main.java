@@ -244,13 +244,13 @@ public String getCurrentDate() {
     return LocalDate.now(ZoneId.of("Asia/Shanghai")).toString();
 }
 
-    // 计算实际奖励金额
-    public int calculateReward(UUID uuid, boolean isSponsor) {
-        int base = isSponsor ? SPONSOR_REWARD : BASE_REWARD;
-        int hours = getConsecutiveHours(uuid);
-        int increment = Math.min(hours, MAX_CONSECUTIVE_HOURS - 1) * REWARD_INCREMENT;
-        return Math.min(base + increment, MAX_REWARD);
-    }
+// 计算第N小时的奖励，N = consecutiveHours + 1
+public int calculateReward(UUID uuid, boolean isSponsor) {
+    int base = isSponsor ? SPONSOR_REWARD : BASE_REWARD;
+    int hours = getConsecutiveHours(uuid); // 已经获得奖励的小时数
+    int increment = Math.min(hours, MAX_CONSECUTIVE_HOURS - 1) * REWARD_INCREMENT;
+    return Math.min(base + increment, MAX_REWARD);
+}
 
     // Getters and Setters
     public Map<UUID, Long> getSessionStartTimes() { return sessionStartTimes; }
@@ -274,11 +274,12 @@ public String getCurrentDate() {
         lastRewardDate.put(uuid, date);
     }
     
-    public String getRandomRewardMessage(int amount, int hours) {
-        String template = REWARD_MESSAGES[(int) (Math.random() * REWARD_MESSAGES.length)];
-        return PREFIX + template.replace("%amount%", String.valueOf(amount))
-                               .replace("%hours%", String.valueOf(hours + 1)); // +1 因为刚完成这一小时
-    }
+public String getRandomRewardMessage(int amount, int consecutiveHours) {
+    String template = REWARD_MESSAGES[(int) (Math.random() * REWARD_MESSAGES.length)];
+    int currentHour = consecutiveHours + 1; // 当前是第几小时
+    return PREFIX + template.replace("%amount%", String.valueOf(amount))
+                           .replace("%hours%", String.valueOf(currentHour));
+}
     
     public Connection getConnection() { return connection; }
     

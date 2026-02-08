@@ -54,23 +54,29 @@ public class TimeCheckTask extends BukkitRunnable {
         }
     }
 
-    private void giveReward(Player player, int rewardAmount, int consecutiveHours) {
-        boolean isSponsor = player.hasPermission(Main.SPONSOR_PERMISSION);
-        String multiplierText = isSponsor ? "§d(x2.0 赞助倍率)" : "§7(x1.0 基础倍率)";
-        
-        // 添加连续奖励信息
-        String consecutiveText = "§e(连续" + (consecutiveHours + 1) + "小时)";
-        
-        // 执行奖励命令
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "money give " + player.getName() + " " + rewardAmount);
+private void giveReward(Player player, int rewardAmount, int consecutiveHoursBeforeReward) {
+    boolean isSponsor = player.hasPermission(Main.SPONSOR_PERMISSION);
+    String multiplierText = isSponsor ? "§d(x2.0 赞助倍率)" : "§7(x1.0 基础倍率)";
+    
+    int currentHour = consecutiveHoursBeforeReward + 1;
+    String consecutiveText = "§e(连续" + currentHour + "小时)";
+    
+    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "money give " + player.getName() + " " + rewardAmount);
 
-        // 随机选择一条二次元风格消息
-        String rewardMsg = plugin.getRandomRewardMessage(rewardAmount, consecutiveHours);
-        player.sendMessage(rewardMsg + " " + consecutiveText + " " + multiplierText);
-        
-        // 如果是最高奖励，发送特殊消息
-        if (rewardAmount >= Main.MAX_REWARD) {
-            player.sendMessage(Main.PREFIX + "§6✦ ✦ ✦ 已达到当日最高奖励！每小时" + Main.MAX_REWARD + "硬币！ ✦ ✦ ✦");
+    String rewardMsg = plugin.getRandomRewardMessage(rewardAmount, consecutiveHoursBeforeReward);
+    player.sendMessage(rewardMsg + " " + consecutiveText + " " + multiplierText);
+    
+    // 计算最大连续小时数
+    int baseReward = isSponsor ? Main.SPONSOR_REWARD : Main.BASE_REWARD;
+    int maxConsecutiveHours = (Main.MAX_REWARD - baseReward) / Main.REWARD_INCREMENT;
+    
+    // 检查是否达到最高奖励
+    if (rewardAmount >= Main.MAX_REWARD) {
+        // 首次达到最高奖励时发送消息
+        if (consecutiveHoursBeforeReward == maxConsecutiveHours) {
+            player.sendMessage(Main.PREFIX + "§6✦ ✦ ✦ 恭喜！已达到当日最高奖励！");
+            player.sendMessage(Main.PREFIX + "§6从现在起，每小时都将获得" + Main.MAX_REWARD + "硬币！ ✦ ✦ ✦");
         }
     }
+}
 }
