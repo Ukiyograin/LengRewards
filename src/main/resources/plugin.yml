@@ -1,5 +1,15 @@
 name: LengRewards
-version: 1.2
+version: 1.3
 main: shaziawa.LengRewards.Main
 api-version: 1.21
 description: 玩家在线时间奖励系统
+commands:
+  奖咪:
+    description: 查看和管理在线奖励
+    usage: /<command> [参数]
+    aliases: [reward, jiangmi]
+
+permissions:
+  lengrewards.admin:
+    description: 允许使用奖咪管理命令
+    default: op

@@ -45,7 +45,7 @@ public class DailyResetTask extends BukkitRunnable {
         }
     }
     
-    private void executePreReset() {
+    public void executePreReset() {
         // 在23:58分发放在线玩家还未满1小时的剩余奖励
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
@@ -102,7 +102,7 @@ public class DailyResetTask extends BukkitRunnable {
         return 0;
     }
     
-    private void executeDailyReset() {
+    public void executeDailyReset() {
         // 重置所有在线玩家的连续在线计数
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();

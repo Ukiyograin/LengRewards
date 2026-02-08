@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
 
 public class Main extends JavaPlugin {
     private Connection connection;
@@ -71,7 +72,9 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
         new TimeCheckTask(this).runTaskTimer(this, 100L, 100L);
         // 启动每日重置任务
-        new DailyResetTask(this).runTaskTimer(this, 6000L, 6000L); // 每5分钟检查一次
+        new DailyResetTask(this).runTaskTimer(this, 6000L, 6000L); 
+        Objects.requireNonNull(getCommand("奖咪")).setExecutor(new Commands(this));
+        Objects.requireNonNull(getCommand("奖咪")).setTabCompleter(new Commands(this));
         getLogger().info(PREFIX + "§a插件已启用！§bauthor:shazi_awa");
     }
 
@@ -262,5 +265,8 @@ public void resetConsecutiveHoursOnQuit(UUID uuid) {
     } catch (SQLException e) {
         getLogger().warning("重置玩家退出时连续小时数出错: " + e.getMessage());
     }
+}
+public DailyResetTask getDailyResetTask() {
+    return new DailyResetTask(this);
 }
 }
