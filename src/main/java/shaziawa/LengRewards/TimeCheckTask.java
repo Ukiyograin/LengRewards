@@ -29,13 +29,24 @@ public class TimeCheckTask extends BukkitRunnable {
 
             // 检查是否达到奖励间隔
             if (totalUnrewarded >= Main.REWARD_INTERVAL) {
+                // 获取玩家信息
+                boolean isSponsor = player.hasPermission(Main.SPONSOR_PERMISSION);
+                int consecutiveHours = plugin.getConsecutiveHours(uuid);
+                int rewardAmount = plugin.calculateReward(uuid, isSponsor);
+                
                 // 发放奖励
-                giveReward(player);
-
+                giveReward(player, rewardAmount, consecutiveHours);
+                
+                // 更新连续在线小时数（+1）
+                plugin.setConsecutiveHours(uuid, consecutiveHours + 1);
+                
+                // 更新最后奖励日期
+                plugin.setLastRewardDate(uuid, plugin.getCurrentDate());
+                
                 // 扣除已奖励的时间
                 long newUnrewarded = totalUnrewarded - Main.REWARD_INTERVAL;
                 plugin.getUnrewardedTime().put(uuid, newUnrewarded);
-                plugin.saveOnlineTime(uuid, newUnrewarded);
+                plugin.savePlayerData(uuid, newUnrewarded);
 
                 // 重置会话开始时间
                 plugin.getSessionStartTimes().put(uuid, System.currentTimeMillis());
@@ -43,14 +54,23 @@ public class TimeCheckTask extends BukkitRunnable {
         }
     }
 
-    private void giveReward(Player player) {
+    private void giveReward(Player player, int rewardAmount, int consecutiveHours) {
         boolean isSponsor = player.hasPermission(Main.SPONSOR_PERMISSION);
-        int rewardAmount = isSponsor ? Main.SPONSOR_REWARD : Main.BASE_REWARD;
         String multiplierText = isSponsor ? "§d(x2.0 赞助倍率)" : "§7(x1.0 基础倍率)";
-
+        
+        // 添加连续奖励信息
+        String consecutiveText = "§e(连续" + (consecutiveHours + 1) + "小时)";
+        
+        // 执行奖励命令
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "money give " + player.getName() + " " + rewardAmount);
 
-        String rewardMsg = Main.PREFIX + "§a您已在线满1小时，获得奖励: §e" + rewardAmount + " §a硬币 " + multiplierText;
-        player.sendMessage(rewardMsg);
+        // 随机选择一条二次元风格消息
+        String rewardMsg = plugin.getRandomRewardMessage(rewardAmount, consecutiveHours);
+        player.sendMessage(rewardMsg + " " + consecutiveText + " " + multiplierText);
+        
+        // 如果是最高奖励，发送特殊消息
+        if (rewardAmount >= Main.MAX_REWARD) {
+            player.sendMessage(Main.PREFIX + "§6✦ ✦ ✦ 已达到当日最高奖励！每小时" + Main.MAX_REWARD + "硬币！ ✦ ✦ ✦");
+        }
     }
 }
