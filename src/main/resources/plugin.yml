@@ -1,5 +1,5 @@
 name: LengRewards
-version: 1.3
+version: 1.4
 main: shaziawa.LengRewards.Main
 api-version: 1.21
 description: 玩家在线时间奖励系统

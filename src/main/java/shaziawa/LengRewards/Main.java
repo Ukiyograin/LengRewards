@@ -97,27 +97,61 @@ public class Main extends JavaPlugin {
         getLogger().info(PREFIX + "§c插件已禁用！§bauthor:shazi_awa");
     }
 
-    private void initializeDatabase() {
-        try {
-            getDataFolder().mkdirs();
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + getDataFolder().getAbsolutePath() + "/player_data.db");
+ private void initializeDatabase() {
+    try {
+        getDataFolder().mkdirs();
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:" + getDataFolder().getAbsolutePath() + "/player_data.db");
+        
+        try (Statement stmt = connection.createStatement()) {
+            // 创建基础表（如果不存在）
+            stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS player_time (" +
+                "uuid TEXT PRIMARY KEY, " +
+                "name TEXT, " +
+                "unrewarded_millis INTEGER DEFAULT 0, " +
+                "consecutive_hours INTEGER DEFAULT 0, " +
+                "last_reward_date TEXT)"
+            );
             
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS player_time (" +
-                    "uuid TEXT PRIMARY KEY, " +
-                    "name TEXT, " +
-                    "unrewarded_millis INTEGER DEFAULT 0, " +
-                    "consecutive_hours INTEGER DEFAULT 0, " +
-                    "last_reward_date TEXT)"
-                );
-            }
-        } catch (ClassNotFoundException | SQLException e) {
-            getLogger().severe("初始化数据库时出错: " + e.getMessage());
-            Bukkit.getPluginManager().disablePlugin(this);
+            // 检查并添加缺失的列
+            checkAndAddColumns(stmt);
         }
+    } catch (ClassNotFoundException | SQLException e) {
+        getLogger().severe("初始化数据库时出错: " + e.getMessage());
+        Bukkit.getPluginManager().disablePlugin(this);
     }
+}
+
+private void checkAndAddColumns(Statement stmt) throws SQLException {
+    // 检查 consecutive_hours 列是否存在
+    try {
+        stmt.executeQuery("SELECT consecutive_hours FROM player_time LIMIT 1");
+    } catch (SQLException e) {
+        // 如果列不存在，添加它
+        getLogger().info(PREFIX + "检测到旧版数据库，正在添加 consecutive_hours 列...");
+        stmt.executeUpdate("ALTER TABLE player_time ADD COLUMN consecutive_hours INTEGER DEFAULT 0");
+        getLogger().info(PREFIX + "已成功添加 consecutive_hours 列");
+    }
+    
+    // 检查 last_reward_date 列是否存在
+    try {
+        stmt.executeQuery("SELECT last_reward_date FROM player_time LIMIT 1");
+    } catch (SQLException e) {
+        // 如果列不存在，添加它
+        getLogger().info(PREFIX + "检测到旧版数据库，正在添加 last_reward_date 列...");
+        stmt.executeUpdate("ALTER TABLE player_time ADD COLUMN last_reward_date TEXT");
+        
+        // 为新列设置默认值（当前日期）
+        String currentDate = getCurrentDate();
+        try (PreparedStatement updateStmt = connection.prepareStatement(
+                "UPDATE player_time SET last_reward_date = ? WHERE last_reward_date IS NULL")) {
+            updateStmt.setString(1, currentDate);
+            updateStmt.executeUpdate();
+        }
+        getLogger().info(PREFIX + "已成功添加 last_reward_date 列并设置默认值");
+    }
+}
 
     public void updateUnrewardedTime(UUID uuid) {
         if (sessionStartTimes.containsKey(uuid)) {
